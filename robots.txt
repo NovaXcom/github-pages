@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://novaxcom.github.io/github-pages/sitemap.xml
