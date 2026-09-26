@@ -589,8 +589,35 @@
     });
   }
 
+  // ---------- 表示の明るさ（ライト／ダーク） ----------
+  // 何も選んでいないときは端末の設定に合わせる。ボタンで選んだら localStorage（nh-theme）に覚える。
+  function initTheme() {
+    var root = document.documentElement;
+    var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    function isDark() {
+      var t = root.getAttribute("data-theme");
+      return t ? t === "dark" : !!(mq && mq.matches);
+    }
+    function label() {
+      document.querySelectorAll("[data-theme-toggle]").forEach(function (b) {
+        b.setAttribute("aria-label", isDark() ? "ライトモードに切り替え" : "ダークモードに切り替え");
+      });
+    }
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var next = isDark() ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem("nh-theme", next); } catch (e) { /* 保存できない環境では今回だけ切り替える */ }
+        label();
+      });
+    });
+    if (mq && mq.addEventListener) mq.addEventListener("change", label);
+    label();
+  }
+
   // ---------- 起動 ----------
   function init() {
+    initTheme();
     paintButtons();
     paintCount();
     var wl = document.getElementById("watchlist");
