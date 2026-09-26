@@ -615,9 +615,51 @@
     label();
   }
 
+  // ---------- 動き（スクロールで浮かび上がる・スコアの数え上げ） ----------
+  // 「動きを減らす」設定の端末では何もしない。JS が動かない環境では最初から表示されたまま。
+  function initMotion() {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !window.requestAnimationFrame) return;
+    var pending = [];
+    document.querySelectorAll(".block, .ft-item, .hc-item, .game-tile-wrap, .cal-item, .rank-list li, .ft-index-item, .game-card")
+      .forEach(function (el, i) {
+        if (el.getBoundingClientRect().top < window.innerHeight) return;   // 最初から見えているものはそのまま
+        el.classList.add("reveal");
+        el.style.transitionDelay = ((i % 4) * 60) + "ms";
+        pending.push(el);
+      });
+    // 画面の下端より上に来たものはすべて表示する（速くスクロールしたり、途中へ飛んだりしても消えたままにならない）
+    var ticking = false;
+    function check() {
+      ticking = false;
+      var limit = window.innerHeight * 0.94;
+      pending = pending.filter(function (el) {
+        if (el.getBoundingClientRect().top < limit) { el.classList.add("is-in"); return false; }
+        return true;
+      });
+      if (!pending.length) window.removeEventListener("scroll", onScroll);
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(check); } }
+    if (pending.length) { window.addEventListener("scroll", onScroll, { passive: true }); window.addEventListener("resize", onScroll); }
+    document.querySelectorAll("[data-count-up]").forEach(function (el) {
+      var to = parseInt(el.textContent, 10);
+      if (!(to > 0)) return;
+      var start = null;
+      function step(t) {
+        if (start === null) start = t;
+        var p = Math.min(1, (t - start) / 900);
+        el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      }
+      el.textContent = "0";
+      requestAnimationFrame(step);
+    });
+  }
+
   // ---------- 起動 ----------
   function init() {
     initTheme();
+    initMotion();
     paintButtons();
     paintCount();
     var wl = document.getElementById("watchlist");

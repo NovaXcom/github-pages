@@ -28,7 +28,7 @@
   <link rel="apple-touch-icon" href="/github-pages/assets/brand/apple-touch-icon.png">
   <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f0f13" media="(prefers-color-scheme: dark)">
-  <meta name="color-scheme" content="light dark"><script>(function(){try{var t=localStorage.getItem("nh-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <meta name="color-scheme" content="light dark"><script>document.documentElement.classList.add("js");(function(){try{var t=localStorage.getItem("nh-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,8 +78,7 @@
     </div>
     <p class="today-lead">Steam の新作・発売予定から、いま注目を集めているタイトルを毎朝スコア化しています。<a href="/github-pages/about/#scoring">スコアの決め方</a></p>
   </div><div class="today-grid">
-    <div class="today-main">
-    <a class="feature" href="/github-pages/games/1478500/">
+    <div class="today-main"><a class="feature is-cinema" href="/github-pages/games/1478500/" style="--art: url('https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1478500/fdcb59d7679058d65e9d5200ef696ffa6070c9a2/capsule_616x353.jpg?t=1785911674')">
       <span class="feature-flag">今日のイチオシ</span><img class="feature-img is-capsule" src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1478500/fdcb59d7679058d65e9d5200ef696ffa6070c9a2/capsule_616x353.jpg?t=1785911674" alt="Big Walk" width="616" height="353" fetchpriority="high">
       <span class="feature-body">
         <span class="feature-info">
@@ -88,7 +87,7 @@
           <span class="feature-meta">2026年8月4日発売 ・ 日本語対応 </span><span class="feature-why">決め手: Steam ランキング・レビュー — 人気の新作 23位、レビュー「圧倒的に好評」38,810件・好評率96%</span>
         </span>
         <span class="feature-score"><span class="rank rank-B rank-lg" title="期待度ランク B：話題上昇中"><b>B</b><span>話題上昇中</span></span>
-<strong>67</strong><small>期待度</small></span>
+<strong data-count-up>67</strong><small>期待度</small></span>
       </span>
     </a>
     <div class="today-more">
