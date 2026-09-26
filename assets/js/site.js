@@ -492,6 +492,11 @@
       return;
     }
 
+    function backdrop(src) {   // タイトル画像の後ろに敷く、ぼかした同じ画像
+      var b = el("span", "media-backdrop");
+      b.style.backgroundImage = "url(\"" + String(src).replace(/["\\]/g, "") + "\")";
+      return b;
+    }
     function clearStage() {
       if (hls) { try { hls.destroy(); } catch (e) { /* 何もしない */ } hls = null; }
       Array.prototype.slice.call(stage.children).forEach(function (c) {
@@ -539,6 +544,7 @@
       if (t.getAttribute("data-type") === "video") {
         var a = el("button", "media-poster"); a.type = "button";
         var img = el("img"); img.src = t.getAttribute("data-poster") || ""; img.alt = t.getAttribute("data-label") || "";
+        if (t.hasAttribute("data-title")) { a.classList.add("has-title"); a.appendChild(backdrop(img.src)); }
         a.appendChild(img);
         var btn = el("span", "mp-btn"); btn.setAttribute("aria-hidden", "true");
         btn.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';   // 固定の図形のみ
@@ -553,7 +559,9 @@
         if (autoplay) play(t, a);
       } else {
         var im = el("img", "media-img"); im.src = t.getAttribute("data-full"); im.alt = t.getAttribute("aria-label") || "";
+        if (t.hasAttribute("data-title")) im.classList.add("is-title");
         stage.insertBefore(im, stage.firstChild);
+        if (t.hasAttribute("data-title")) stage.insertBefore(backdrop(im.src), stage.firstChild);
       }
       if (counter) counter.textContent = (current + 1) + " / " + thumbs.length;
       t.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
