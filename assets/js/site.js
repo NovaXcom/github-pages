@@ -480,12 +480,88 @@
     }
     return hlsPromise;
   }
+  // ---------- 動画・スクリーンショットを画面いっぱいで見る ----------
+  // Fullscreen API が使えるブラウザはそれを使い、使えない（iPhone の Safari など）ときは画面全体に広げる表示で代わりにする。
+  function initFullscreen(root, stage) {
+    var btn = el("button", "media-fs");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "画面いっぱいで見る");
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';   // 固定の図形のみ
+    stage.appendChild(btn);
+    var native = !!(stage.requestFullscreen || stage.webkitRequestFullscreen);
+    function isFull() { return stage.classList.contains("is-full") || document.fullscreenElement === stage || document.webkitFullscreenElement === stage; }
+    function exit() {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+      stage.classList.remove("is-full");
+      document.documentElement.classList.remove("media-lock");
+      btn.setAttribute("aria-label", "画面いっぱいで見る");
+    }
+    btn.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      if (isFull()) { exit(); return; }
+      btn.setAttribute("aria-label", "元の大きさに戻す");
+      if (native) {
+        var r = stage.requestFullscreen ? stage.requestFullscreen() : stage.webkitRequestFullscreen();
+        if (r && r.catch) r.catch(function () { stage.classList.add("is-full"); });
+      } else {
+        stage.classList.add("is-full");
+        document.documentElement.classList.add("media-lock");
+      }
+    });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && stage.classList.contains("is-full")) exit(); });
+    ["fullscreenchange", "webkitfullscreenchange"].forEach(function (name) {
+      document.addEventListener(name, function () { if (!document.fullscreenElement && !document.webkitFullscreenElement) btn.setAttribute("aria-label", "画面いっぱいで見る"); });
+    });
+  }
+
+  // ---------- 今日のイチオシ：トレーラーを音なしで自動再生 ----------
+  // 通信を節約する設定・遅い回線・動きを減らす設定では再生しない。画面から外れたら止める。
+  function initHeroTrailer() {
+    var card = document.querySelector("[data-hero-hls], [data-hero-mp4]");
+    if (!card || !("IntersectionObserver" in window)) return;
+    var conn = navigator.connection || {};
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || conn.saveData || /(^|-)2g|3g/.test(conn.effectiveType || "")) return;
+    var img = card.querySelector(".feature-img");
+    if (!img) return;
+    var v = document.createElement("video");
+    v.className = "feature-video";
+    v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+    v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+    var started = false, visible = false;
+    function playNow() { var p = v.play(); if (p && p.catch) p.catch(function () { /* 自動再生できない環境では画像のまま */ }); }
+    function load() {
+      started = true;
+      img.insertAdjacentElement("afterend", v);
+      v.addEventListener("playing", function () { card.classList.add("is-playing"); });
+      var mp4 = card.getAttribute("data-hero-mp4"), src = card.getAttribute("data-hero-hls");
+      if (mp4) { v.src = mp4; playNow(); return; }
+      if (v.canPlayType("application/vnd.apple.mpegurl")) { v.src = src; playNow(); return; }
+      loadHls().then(function (Hls) {
+        if (!Hls.isSupported()) return;
+        var h = new Hls({ capLevelToPlayerSize: true, maxBufferLength: 20 });
+        h.on(Hls.Events.ERROR, function (e, data) { if (data && data.fatal) { h.destroy(); v.remove(); card.classList.remove("is-playing"); } });
+        h.loadSource(src); h.attachMedia(v);
+        h.on(Hls.Events.MANIFEST_PARSED, function () { if (visible) playNow(); });
+      }).catch(function () { v.remove(); });
+    }
+    new IntersectionObserver(function (entries) {
+      visible = entries[0].isIntersecting;
+      if (visible && !started) { setTimeout(load, 600); return; }   // 画像を先に見せてから読み込む
+      if (!started) return;
+      if (visible && !document.hidden) playNow(); else v.pause();
+    }, { threshold: 0.35 }).observe(card);
+    document.addEventListener("visibilitychange", function () { if (document.hidden) v.pause(); else if (visible && started) playNow(); });
+  }
+
   function initMedia(root) {
     var stage = root.querySelector("[data-stage]");
     var thumbs = Array.prototype.slice.call(root.querySelectorAll(".media-thumb"));
     var counter = root.querySelector("[data-count]");
     var store = root.getAttribute("data-store") || "";
     var current = 0, hls = null;
+    initFullscreen(root, stage);
     if (!thumbs.length) {   // 1 件だけ：最初の動画の再生だけ有効にする
       var only = stage.querySelector("[data-play]");
       if (only) only.addEventListener("click", function (ev) { ev.preventDefault(); play(null, only); });
@@ -500,7 +576,7 @@
     function clearStage() {
       if (hls) { try { hls.destroy(); } catch (e) { /* 何もしない */ } hls = null; }
       Array.prototype.slice.call(stage.children).forEach(function (c) {
-        if (!c.classList.contains("media-nav") && !c.hasAttribute("data-count")) stage.removeChild(c);
+        if (!c.classList.contains("media-nav") && !c.classList.contains("media-fs") && !c.hasAttribute("data-count")) stage.removeChild(c);
       });
     }
     function fallback(msg) {
@@ -660,6 +736,7 @@
   function init() {
     initTheme();
     initMotion();
+    initHeroTrailer();
     paintButtons();
     paintCount();
     var wl = document.getElementById("watchlist");
